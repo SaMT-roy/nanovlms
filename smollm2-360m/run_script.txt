@@ -1,0 +1,7 @@
+CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python -m torch.distributed.run --standalone --nproc_per_node=4 train.py > train.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python -m torch.distributed.run --standalone --nproc_per_node=4 train2.py > train2.log 2>&1 &
+
+nohup python train.py > train.log 2>&1 &
+setsid python train2.py > train2.log 2>&1 &
+
+nohup python inference.py > inference.log 2>&1 &
