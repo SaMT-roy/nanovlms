@@ -1,0 +1,38 @@
+1. nohup python train.py > train.log 2>&1 &
+3. setsid python train2.py > train2.log 2>&1 &
+2. ps -ef | grep train.py
+
+3. nohup bash -c "CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.run --standalone --nproc_per_node=4 train.py" > train.log 2>&1 &  
+
+Note : --nproc_per_node=="CUDA_VISIBLE_DEVICES
+
+4. CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python -m torch.distributed.run --standalone --nproc_per_node=4 train.py > train.log 2>&1 &
+
+CUDA_VISIBLE_DEVICES=0,1 setsid python -m torch.distributed.run --standalone --nproc_per_node=2 train.py > train.log 2>&1 &
+
+5. nohup python inference.py > inference.log 2>&1 &
+   nohup python inference.py > /dev/null 2>&1 &
+
+
+nohup python dpo_dataprep.py > dpo_dataprep.log 2>&1 &
+
+ps -ef | grep inference.py
+
+
+nohup python dpo_dataprep2.py --shard_id 0 --num_shards 3 --gpu 0 > log0.txt 2>&1 &
+nohup python dpo_dataprep2.py --shard_id 1 --num_shards 3 --gpu 2 > log2.txt 2>&1 &
+nohup python dpo_dataprep2.py --shard_id 2 --num_shards 3 --gpu 3 > log3.txt 2>&1 &
+
+
+setsid bash -c '
+CUDA_VISIBLE_DEVICES=0 python dpo_dataprep.py --shard_id 0 --num_shards 4 --gpu 0 > shard0.log 2>&1 &
+CUDA_VISIBLE_DEVICES=1 python dpo_dataprep.py --shard_id 1 --num_shards 4 --gpu 1 > shard1.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2 python dpo_dataprep.py --shard_id 2 --num_shards 4 --gpu 2 > shard2.log 2>&1 &
+CUDA_VISIBLE_DEVICES=3 python dpo_dataprep.py --shard_id 3 --num_shards 4 --gpu 3 > shard3.log 2>&1 &
+wait
+' &
+
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 setsid python -m torch.distributed.run --standalone --nproc_per_node=4 vqvae.py > vqvae.log 2>&1 &
+
+nohup python rcode.py > rcode.log 2>&1 &
